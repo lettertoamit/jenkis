@@ -1,0 +1,17 @@
+<?php 
+// Use API Library 
+include "vendor/autoload.php";
+$jenkins = new \JenkinsKhan\Jenkins('http://user:token@xyz.com:port');
+
+//Create a job
+
+$configxml = $jenkins->getJobConfig('test');
+$test = $jenkins->createJob("abcd",$configxml);
+
+
+ // Get list of ALL jobs
+    foreach ($jenkins->getAllJobs() as $jobx) {
+      var_dump($jobx["name"]);
+    }
+
+?>
