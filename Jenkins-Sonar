@@ -1,0 +1,120 @@
+<?php
+
+/**
+ * Template Name: Jenkins Sonar connectivity Code using jenkins API ( for more add me to mail me - lettertoamit@gmail.com )
+ *
+ *
+ */
+
+if ( is_user_logged_in() ) {
+
+get_header(); 
+include "vendor/autoload.php";
+
+$jenkins = new \JenkinsKhan\Jenkins('http://user:token@localorexternalip.com:port');
+if(isset($_POST['submit'])){
+  require_once( ABSPATH . 'wp-admin/includes/file.php' );
+	$uploadedfile = $_FILES['project_file'];
+	$upload_overrides = array( 'test_form' => false );
+	$movefile = wp_handle_upload( $uploadedfile, $upload_overrides );
+
+
+	if ( $movefile && ! isset( $movefile['error'] ) ) {
+		//echo "File is valid, and was successfully uploaded.\n";
+
+    $congiffile = '<project>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.scm.NullSCM"/>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+    <hudson.tasks.Shell>
+    <command>       
+    wget    $site_url()/$uploadedfile["filename"] 
+    unzip    $uploadedfile["filename"] 
+    rm $uploadedfile["filename"] 
+    </command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+    <command>pwd</command>
+    </hudson.tasks.Shell>
+    </builders>
+    <publishers/>
+    <buildWrappers/>
+    </project>'; 
+
+
+    $sonarconfig =  '
+    <project>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.scm.NullSCM"/>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+    <hudson.plugins.sonar.SonarRunnerBuilder plugin="sonar@2.7.1">
+    <properties>sonar.projectKey='.$_POST["project_name"].'
+    sonar.projectName='.$_POST["project_name"].'
+    sonar.projectVersion=1.0.0
+    sonar.projectDescription='.$_POST["project_name"].'
+    sonar.sources=<workspacePath>/'.$_POST["project_name"].'
+    sonar.sources=src,copybooks
+    sonar.sourceEncoding=UTF-8
+    </properties>
+    <javaOpts></javaOpts>
+    <additionalArguments></additionalArguments>
+    <jdk>(Inherit From Job)</jdk>
+    <sonarScannerName>'.$_POST["project_name"].'</sonarScannerName>
+    <task></task>
+    </hudson.plugins.sonar.SonarRunnerBuilder>
+    </builders>
+    <publishers/>
+    <buildWrapper/>
+    </project>';
+
+
+$a = array('sonar.projectKey'=>$_POST["project_name"] , 'sonar.projectName'=>$_POST["project_name"], 'sonar.projectVersion'=>'1.0.0', 'sonar.projectDescription'=>$_POST["project_name"] , 'sonar.sources'=>'<workspacePath>/'.$_POST["project_name"] ); 
+   $jenkins->createJob($_POST["project_name"],$congiffile); 
+   $jenkins->launchJob($_POST["project_name"] );
+   $jenkins->setJobConfig($_POST["project_name"] , $sonarconfig); 
+  // $jenkins->launchJob($_POST["project_name"] );
+
+    echo "project created";
+		// var_dump( $movefile );
+  } else {
+
+    echo $movefile['error'];
+  }
+
+}
+ ?>
+
+</br> 
+			<form action="" method="POST" enctype="multipart/form-data"> 
+					<input type="text" name="project_name" placeholder="Project name" required>  
+					<input type="file" name="project_file" required> 
+					<input type="submit" name="submit"> 
+			</form>
+		</div>
+	</div>
+</div>
+
+
+<?php
+get_footer();
+}else{
+
+  wp_redirect(site_url());
+}
+?>
